@@ -1,0 +1,1 @@
+ALTER TABLE "service_ids" RENAME COLUMN "scid" TO "svcid";

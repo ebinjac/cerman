@@ -1,0 +1,76 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1744337807138,
+      "tag": "0000_classy_logan",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1744339392910,
+      "tag": "0001_sweet_the_leader",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1744360383027,
+      "tag": "0002_sloppy_miracleman",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1744361321594,
+      "tag": "0003_sticky_jack_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1744361789257,
+      "tag": "0004_amused_arclight",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1744385457569,
+      "tag": "0005_whole_speed_demon",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1744438007231,
+      "tag": "0006_amazing_morph",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1744442080564,
+      "tag": "0007_naive_proteus",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1744469133301,
+      "tag": "0008_aromatic_morph",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1744471505922,
+      "tag": "0009_brown_wallop",
+      "breakpoints": true
+    }
+  ]
+}
