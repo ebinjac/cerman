@@ -8,6 +8,7 @@ export const teamsTable = pgTable("teams", {
   alert1: varchar("alert1", { length: 255 }),
   alert2: varchar("alert2", { length: 255 }),
   alert3: varchar("alert3", { length: 255 }),
+  notificationEmails: text("notification_emails").notNull().default('[]'),
   snowGroup: varchar("snow_group", { length: 255 }),
   prcGroup: varchar("prc_group", { length: 255 }),
   applications: varchar("applications", { length: 255 }).array(),
@@ -129,3 +130,18 @@ export const serviceIds = pgTable('service_ids', {
 
 export type ServiceId = typeof serviceIds.$inferSelect;
 export type NewServiceId = typeof serviceIds.$inferInsert;
+
+export const notificationHistory = pgTable('notification_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  itemId: text('item_id').notNull(),
+  itemType: text('item_type').notNull(), // 'certificate' or 'serviceId'
+  itemName: text('item_name').notNull(),
+  teamId: uuid('team_id').references(() => teamsTable.id).notNull(),
+  daysUntilExpiry: text('days_until_expiry').notNull(),
+  notificationType: text('notification_type').notNull(), // 'email' or 'other'
+  recipients: text('recipients').notNull(), // JSON array of email addresses
+  sentAt: timestamp('sent_at').defaultNow().notNull(),
+  status: text('status').notNull(), // 'success' or 'failed'
+  errorMessage: text('error_message'),
+  triggeredBy: text('triggered_by').notNull(), // 'system' or 'admin'
+});

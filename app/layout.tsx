@@ -6,6 +6,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner"
 import { TeamBar } from "@/src/components/TeamBar";
 import { ThemeProvider } from "@/components/theme-provider";
+import { backgroundService } from '@/src/lib/backgroundService';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,8 +20,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Certificate Management System",
-  description: "Centralized certificate management platform",
+  description: "Manage and monitor certificates and service IDs",
 };
+
+// Start the background service
+backgroundService.start();
 
 export default function RootLayout({
   children,

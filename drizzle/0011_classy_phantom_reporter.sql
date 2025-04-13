@@ -1,0 +1,2 @@
+ALTER TABLE "notification_history" ALTER COLUMN "team_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "notification_history" ADD CONSTRAINT "notification_history_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE no action ON UPDATE no action;

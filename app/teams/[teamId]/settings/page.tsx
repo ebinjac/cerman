@@ -1,12 +1,19 @@
 import { getTeamById } from "@/src/app/actions";
 import { redirect } from "next/navigation";
 import { TeamSettingsForm } from "@/src/components/TeamSettingsForm";
+import { isValidUUID } from "@/src/lib/utils";
+
 
 export default async function TeamSettingsPage({
   params,
 }: {
   params: { teamId: string };
 }) {
+  // Check if teamId is valid UUID
+  if (!params.teamId || !isValidUUID(params.teamId)) {
+    redirect("/teams");
+  }
+
   const team = await getTeamById(params.teamId);
 
   if (!team) {
@@ -22,7 +29,7 @@ export default async function TeamSettingsPage({
             Manage your team's contact information and group details
           </p>
         </div>
-        <div className=" rounded-lg shadow p-6">
+        <div className="rounded-lg shadow p-6">
           <TeamSettingsForm team={team} />
         </div>
       </div>

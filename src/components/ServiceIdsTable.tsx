@@ -42,7 +42,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface ServiceId {
   id: string
@@ -68,6 +70,8 @@ export function ServiceIdsTable({ serviceIds, teamId, teamApplications }: Servic
   const [applicationFilter, setApplicationFilter] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [serviceIdToDelete, setServiceIdToDelete] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({})
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
 
   const handleDelete = async (id: string) => {
     try {
@@ -78,6 +82,21 @@ export function ServiceIdsTable({ serviceIds, teamId, teamApplications }: Servic
       toast.error("Failed to delete service ID")
     } finally {
       setServiceIdToDelete(null)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    setIsBulkDeleting(true)
+    try {
+      const selectedServiceIds = Object.keys(selectedIds).filter(id => selectedIds[id])
+      await Promise.all(selectedServiceIds.map(id => deleteServiceId(id)))
+      toast.success(`${selectedServiceIds.length} service IDs deleted successfully`)
+      setSelectedIds({})
+      router.refresh()
+    } catch (error) {
+      toast.error("Failed to delete service IDs")
+    } finally {
+      setIsBulkDeleting(false)
     }
   }
 
@@ -148,6 +167,7 @@ export function ServiceIdsTable({ serviceIds, teamId, teamApplications }: Servic
   }
 
   const hasActiveFilters = expiryFilter !== "all" || applicationFilter !== "all" || searchQuery !== ""
+  const hasSelectedItems = Object.values(selectedIds).some(Boolean)
 
   return (
     <>
@@ -214,6 +234,39 @@ export function ServiceIdsTable({ serviceIds, teamId, teamApplications }: Servic
                 <X className="h-4 w-4" />
               </Button>
             )}
+
+            {hasSelectedItems && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    className="flex items-center gap-2"
+                    disabled={isBulkDeleting}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Selected
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Selected Service IDs</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete the selected service IDs? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleBulkDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      disabled={isBulkDeleting}
+                    >
+                      {isBulkDeleting ? "Deleting..." : "Delete"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
 
@@ -221,6 +274,19 @@ export function ServiceIdsTable({ serviceIds, teamId, teamApplications }: Servic
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={filteredServiceIds.length > 0 && filteredServiceIds.every(id => selectedIds[id.id])}
+                    onCheckedChange={(checked) => {
+                      const newSelectedIds = { ...selectedIds }
+                      filteredServiceIds.forEach(id => {
+                        newSelectedIds[id.id] = !!checked
+                      })
+                      setSelectedIds(newSelectedIds)
+                    }}
+                    aria-label="Select all"
+                  />
+                </TableHead>
                 <TableHead>Service ID</TableHead>
                 <TableHead>Environment</TableHead>
                 <TableHead>Application</TableHead>
@@ -234,6 +300,18 @@ export function ServiceIdsTable({ serviceIds, teamId, teamApplications }: Servic
                 const { status, variant } = getStatus(serviceId.expDate)
                 return (
                   <TableRow key={serviceId.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds[serviceId.id] || false}
+                        onCheckedChange={(checked) => {
+                          setSelectedIds(prev => ({
+                            ...prev,
+                            [serviceId.id]: !!checked
+                          }))
+                        }}
+                        aria-label={`Select ${serviceId.svcid}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{serviceId.svcid}</TableCell>
                     <TableCell>{serviceId.env}</TableCell>
                     <TableCell>{serviceId.application}</TableCell>

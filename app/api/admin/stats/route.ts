@@ -1,9 +1,9 @@
 import { getDb } from "@/db/server";
 import { teamsTable, certificatesTable, serviceIds } from "@/db/schema";
 import { count } from "drizzle-orm";
-import { AdminDashboard } from "./dashboard";
+import { NextResponse } from "next/server";
 
-async function getStats() {
+export async function GET() {
   const db = await getDb();
   
   const [totalTeams, totalCerts, totalServiceIds] = await Promise.all([
@@ -12,15 +12,9 @@ async function getStats() {
     db.select({ count: count() }).from(serviceIds),
   ]);
 
-  return {
+  return NextResponse.json({
     teams: totalTeams[0].count,
     certificates: totalCerts[0].count,
     serviceIds: totalServiceIds[0].count,
-  };
-}
-
-export default async function AdminPage() {
-  const stats = await getStats();
-  
-  return <AdminDashboard initialStats={stats} />;
-}
+  });
+} 
