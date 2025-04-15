@@ -1,4 +1,4 @@
-import { pgTable, varchar, boolean, timestamp, uuid, index, text, jsonb, unique, serial, date, integer } from "drizzle-orm/pg-core";
+import { pgTable, varchar, boolean, timestamp, uuid, index, text, jsonb, unique, serial, date, integer, json } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const teamsTable = pgTable("teams", {
@@ -93,13 +93,17 @@ export const certificatesTable = pgTable("certificates", {
 
 export const teamRelations = relations(teamsTable, ({ many }) => ({
   certificates: many(certificatesTable),
+  applications: many(applications),
+  serviceIds: many(serviceIds),
+  plannings: many(certificatePlannings),
 }));
 
-export const certificateRelations = relations(certificatesTable, ({ one }) => ({
+export const certificateRelations = relations(certificatesTable, ({ one, many }) => ({
   team: one(teamsTable, {
     fields: [certificatesTable.teamId],
     references: [teamsTable.id]
   }),
+  plannings: many(certificatePlannings),
 }));
 
 // Add TypeScript type for certificates
@@ -131,6 +135,13 @@ export const serviceIds = pgTable('service_ids', {
 export type ServiceId = typeof serviceIds.$inferSelect;
 export type NewServiceId = typeof serviceIds.$inferInsert;
 
+export const serviceIdsRelations = relations(serviceIds, ({ one }) => ({
+  team: one(teamsTable, {
+    fields: [serviceIds.renewingTeamId],
+    references: [teamsTable.id],
+  }),
+}));
+
 export const notificationHistory = pgTable('notification_history', {
   id: uuid('id').defaultRandom().primaryKey(),
   itemId: text('item_id').notNull(),
@@ -145,3 +156,61 @@ export const notificationHistory = pgTable('notification_history', {
   errorMessage: text('error_message'),
   triggeredBy: text('triggered_by').notNull(), // 'system' or 'admin'
 });
+
+export const applications = pgTable("applications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  carid: text("carid").notNull(),
+  tla: text("tla").notNull(),
+  tier: text("tier").notNull(),
+  engineeringDirector: text("engineering_director").notNull(),
+  engineeringVP: text("engineering_vp").notNull(),
+  productionDirector: text("production_director").notNull(),
+  productionVP: text("production_vp").notNull(),
+  snowGroup: text("snow_group").notNull(),
+  contactEmail: text("contact_email").notNull(),
+  slack: text("slack").notNull(),
+  confluence: text("confluence").notNull(),
+  description: text("description").notNull(),
+  metadata: jsonb("metadata").default({}),
+  teamId: uuid("team_id").notNull().references(() => teamsTable.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdBy: text("created_by").notNull(),
+  updatedBy: text("updated_by").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+})
+
+export const applicationsRelations = relations(applications, ({ one }) => ({
+  team: one(teamsTable, {
+    fields: [applications.teamId],
+    references: [teamsTable.id],
+  }),
+}))
+
+export const certificatePlannings = pgTable("certificate_plannings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teamId: uuid("team_id").references(() => teamsTable.id).notNull(),
+  certificateId: uuid("certificate_id").references(() => certificatesTable.id).notNull(),
+  plannedDate: timestamp("planned_date").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default('pending'),
+  notes: text("notes"),
+  assignedTo: varchar("assigned_to", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdBy: varchar("created_by", { length: 255 }).notNull(),
+  updatedBy: varchar("updated_by", { length: 255 }),
+});
+
+export type CertificatePlanning = typeof certificatePlannings.$inferSelect;
+
+export const certificatePlanningsRelations = relations(certificatePlannings, ({ one }) => ({
+  team: one(teamsTable, {
+    fields: [certificatePlannings.teamId],
+    references: [teamsTable.id],
+  }),
+  certificate: one(certificatesTable, {
+    fields: [certificatePlannings.certificateId],
+    references: [certificatesTable.id],
+  }),
+}));

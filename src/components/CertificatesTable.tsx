@@ -20,7 +20,7 @@ import {
   FilterFn
 } from "@tanstack/react-table"
 import { useState } from "react"
-import { ArrowUpDown, ChevronUp, ChevronDown, Loader2, RotateCw, MoreVertical, Edit, Trash2, Download, Eye } from "lucide-react"
+import { ArrowUpDown, ChevronUp, ChevronDown, Loader2, RotateCw, MoreVertical, Edit, Trash2, Download, Eye, CalendarPlus } from "lucide-react"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { CertificateTableSkeleton } from "./ui/loading";
 import Link from "next/link";
+import { CertificateOnboardingModal } from "./CertificateOnboardingModal";
+import { PlanningModal } from "./PlanningModal"
 
 // Add these imports
 import { Checkbox } from "@/components/ui/checkbox";
@@ -43,6 +45,7 @@ interface CertificatesTableProps {
   data: Certificate[];
   teamId: string;
   isLoading?: boolean;
+  teamApplications: string[];
 }
 
 declare module '@tanstack/react-table' {
@@ -52,7 +55,7 @@ declare module '@tanstack/react-table' {
   }
 }
 
-export function CertificatesTable({ data, teamId, isLoading }: CertificatesTableProps) {
+export function CertificatesTable({ data, teamId, isLoading, teamApplications }: CertificatesTableProps) {
   const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null);
   const [viewingCertificate, setViewingCertificate] = useState<Certificate | null>(null);
   const [sorting, setSorting] = useState<SortingState>([])
@@ -69,6 +72,7 @@ export function CertificatesTable({ data, teamId, isLoading }: CertificatesTable
   const router = useRouter();
   const [rowSelection, setRowSelection] = useState({});
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [planningCertificate, setPlanningCertificate] = useState<Certificate | null>(null);
 
   const handleDelete = async (certId: string) => {
     setIsDeleting(true);
@@ -276,7 +280,10 @@ export function CertificatesTable({ data, teamId, isLoading }: CertificatesTable
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
-              
+              <DropdownMenuItem onClick={() => setPlanningCertificate(certificate)}>
+                <CalendarPlus className="mr-2 h-4 w-4" />
+                Plan
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={handleRefresh} 
                 disabled={isRefreshing || !certificate.isAmexCert}
@@ -444,6 +451,10 @@ export function CertificatesTable({ data, teamId, isLoading }: CertificatesTable
           className="max-w-sm"
         />
         <div className="flex items-center gap-4">
+          <CertificateOnboardingModal
+            teamId={teamId}
+            teamApplications={teamApplications}
+          />
           <div className="flex items-center gap-2">
             <Select 
               value={statusFilter} 
@@ -673,6 +684,15 @@ export function CertificatesTable({ data, teamId, isLoading }: CertificatesTable
           }}
         />
       )}
+      <PlanningModal
+        open={!!planningCertificate}
+        onOpenChange={(open) => !open && setPlanningCertificate(null)}
+        certificateId={planningCertificate?.id || ""}
+        teamId={teamId}
+        onSuccess={() => {
+          setPlanningCertificate(null)
+        }}
+      />
     </div>
   )
 

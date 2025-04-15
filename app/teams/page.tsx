@@ -1,11 +1,33 @@
 import { getDb } from "@/db/server";
+import { eq } from 'drizzle-orm';
 import { teamsTable } from "@/db/schema";
 import { TeamSelector } from "@/src/components/TeamSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { getSession } from "@/lib/session";
+import { db } from "@/src/db/client";
+import { headers } from 'next/headers';
 
-export default async function TeamsPage() {
+
+
+export default async function TeamsPage({
+  params,
+}: {
+  params: Promise<{ teamid: string }>
+}) {
+
+  const headersList = headers();
+  const cookie = (await headersList).get('cookie') || '';
+
+  const session = await getSession(cookie);
+  const team = await db.select()
+    .from(teamsTable)
+    .where(eq(teamsTable.id, (await params).teamid))
+    .execute().then((res) => res[0]);
+
+  if (!team) return <div>Team not found</div>;
+
   let teams = [];
   let error = null;
 

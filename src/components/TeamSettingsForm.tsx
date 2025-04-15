@@ -27,7 +27,6 @@ const formSchema = z.object({
   alert3: z.array(z.string().email("Invalid email format")).optional(),
   snowGroup: z.string().min(1, "ServiceNow group is required"),
   prcGroup: z.string().min(1, "PRC group is required"),
-  applications: z.string().min(1, "At least one application is required"),
 });
 
 interface TeamSettingsFormProps {
@@ -40,7 +39,6 @@ interface TeamSettingsFormProps {
     alert3: string | null;
     snowGroup: string | null;
     prcGroup: string | null;
-    applications: string[] | null;
   };
 }
 
@@ -56,23 +54,17 @@ export function TeamSettingsForm({ team }: TeamSettingsFormProps) {
       alert3: team.alert3 ? [team.alert3] : [],
       snowGroup: team.snowGroup || "",
       prcGroup: team.prcGroup || "",
-      applications: team.applications?.join(", ") || "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const applications = values.applications
-        .split(",")
-        .map((app) => app.trim())
-        .filter(Boolean);
-
       await updateTeam(team.id, {
         ...values,
         alert1: values.alert1.join(", "),
         alert2: values.alert2?.join(", ") || "",
         alert3: values.alert3?.join(", ") || "",
-        applications,
+        applications: [],
       });
 
       toast.success("Team settings updated successfully");
@@ -182,23 +174,6 @@ export function TeamSettingsForm({ team }: TeamSettingsFormProps) {
                 <FormLabel>PRC Group</FormLabel>
                 <FormControl>
                   <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="applications"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>Applications</FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    placeholder="Enter applications separated by commas"
-                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

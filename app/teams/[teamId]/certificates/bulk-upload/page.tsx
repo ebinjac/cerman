@@ -11,6 +11,9 @@ export default async function BulkUploadPage({
   const { teamId } = await params
   const team = await getTeamById(teamId)
 
+  // Map application objects to their names
+  const applicationNames = team?.applications?.map(app => app.name) || []
+
   return (
     <div className="space-y-8 p-8">
       <div className="flex justify-between items-center">
@@ -19,7 +22,7 @@ export default async function BulkUploadPage({
       <Suspense fallback={<CertificateTableSkeleton />}>
         <CertificateBulkUpload 
           teamId={teamId}
-          teamApplications={team?.applications || []}
+          teamApplications={applicationNames}
         />
       </Suspense>
     </div>

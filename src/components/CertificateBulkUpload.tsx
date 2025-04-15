@@ -16,6 +16,29 @@ interface CertificateBulkUploadProps {
   teamApplications: string[]
 }
 
+interface CertificateRecord {
+  commonName: string;
+  serialNumber: string;
+  environment: string;
+  serverName: string;
+  keystorePath: string;
+  uri: string;
+  applicationName: string;
+  comment?: string;
+  validFrom?: string;
+  validTo?: string;
+  isAmexCert?: boolean;
+}
+
+const isValidDate = (dateString: string): boolean => {
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date.getTime());
+};
+
+interface ValidationErrors {
+  [key: string]: string;
+}
+
 export function CertificateBulkUpload({ 
   teamId,
   teamApplications 
@@ -26,30 +49,34 @@ export function CertificateBulkUpload({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadResults, setUploadResults] = useState<any[]>([]);
   const [previewData, setPreviewData] = useState<any[]>([]);
-  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}[]>([]);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors[]>([]);
   const [activeTab, setActiveTab] = useState<"amex" | "non-amex">("amex");
   const [isDragging, setIsDragging] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const validateCertificate = (record: any, index: number) => {
-    const errors: {[key: string]: string} = {};
+  const validateCertificate = (record: CertificateRecord, teamApplications: string[]): ValidationErrors => {
+    const errors: ValidationErrors = {};
     
     // Common validations
     if (!record.commonName) errors.commonName = "Common name is required";
     if (!record.serialNumber) errors.serialNumber = "Serial number is required";
-    if (!record.applicationId) errors.applicationId = "Application ID is required";
+    if (!record.applicationName) errors.applicationName = "Application name is required";
     
     // Validate application exists in team
-    if (!teamApplications.includes(record.applicationId)) {
-      errors.applicationId = "Application not found in team";
+    if (!teamApplications.includes(record.applicationName)) {
+      errors.applicationName = "Application not found in team";
     }
 
-    // Non-AMEX specific validations
-    if (record.isAmexCert === 'false') {
-      if (!record.validFrom) errors.validFrom = "Valid from date is required";
-      if (!record.validTo) errors.validTo = "Valid to date is required";
+    // Validate dates if present
+    if (record.validFrom && !isValidDate(record.validFrom)) {
+      errors.validFrom = "Invalid date format";
+    }
+    if (record.validTo && !isValidDate(record.validTo)) {
+      errors.validTo = "Invalid date format";
     }
 
-    return Object.keys(errors).length > 0 ? errors : null;
+    return errors;
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,24 +90,33 @@ export function CertificateBulkUpload({
         .filter(line => line.trim() !== '')
         .map(line => {
           const values = line.split(',');
-          return {
+          const record: CertificateRecord = {
             isAmexCert: activeTab === "amex",
             commonName: values[0],
             serialNumber: values[1],
             environment: values[2],
-            validFrom: activeTab === "non-amex" ? values[3] : null,
-            validTo: activeTab === "non-amex" ? values[4] : null,
-            serverName: values[activeTab === "non-amex" ? 5 : 3],
-            keystorePath: values[activeTab === "non-amex" ? 6 : 4],
-            uri: values[activeTab === "non-amex" ? 7 : 5],
-            applicationId: values[activeTab === "non-amex" ? 8 : 6],
-            comment: values[activeTab === "non-amex" ? 9 : 7]
+            ...(activeTab === "non-amex" ? {
+              validFrom: values[3] || undefined,
+              validTo: values[4] || undefined,
+              serverName: values[5],
+              keystorePath: values[6],
+              uri: values[7],
+              applicationName: values[8],
+              comment: values[9]
+            } : {
+              serverName: values[3],
+              keystorePath: values[4],
+              uri: values[5],
+              applicationName: values[6],
+              comment: values[7]
+            })
           };
+          return record;
         });
 
       // Validate each record
-      const errors = records.map((record, index) => validateCertificate(record, index));
-      setValidationErrors(errors.filter(e => e !== null) as {[key: string]: string}[]);
+      const errors = records.map((record, index) => validateCertificate(record, teamApplications));
+      setValidationErrors(errors);
       setPreviewData(records);
       
     } catch (error) {
@@ -114,6 +150,33 @@ export function CertificateBulkUpload({
     }
   };
 
+  const handleFileUpload = async (file: File) => {
+    try {
+      setIsLoading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/certificates/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      const data = await response.json();
+      setValidationErrors(data.errors || []);
+      setUploadResults(data.results || []);
+      setPreviewData(data.preview || []);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setValidationErrors([{ error: 'Failed to upload file' }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Tabs defaultValue="amex" className="w-full" onValueChange={(value) => {
       setActiveTab(value as "amex" | "non-amex");
@@ -137,8 +200,8 @@ export function CertificateBulkUpload({
                 variant="outline" 
                 onClick={() => {
                   const template = [
-                    'commonName,serialNumber,environment,serverName,keystorePath,uri,applicationId,comment',
-                    'example.com,123456789,E1,server1,/path/to/keystore,https://example.com,APP123,Optional comment'
+                    'commonName,serialNumber,environment,serverName,keystorePath,uri,applicationName,comment',
+                    'example.com,123456789,E1,server1,/path/to/keystore,https://example.com,Example App,Optional comment'
                   ].join('\n');
                   downloadCsv(template, 'amex-certificate-template.csv');
                 }}
@@ -303,7 +366,7 @@ export function CertificateBulkUpload({
                 variant="outline" 
                 onClick={() => {
                   const template = [
-                    'commonName,serialNumber,environment,validFrom,validTo,serverName,keystorePath,uri,applicationId,comment',
+                    'commonName,serialNumber,environment,validFrom,validTo,serverName,keystorePath,uri,applicationName,comment',
                     'example2.com,987654321,E2,2023-01-01,2024-01-01,server2,/another/path,https://example2.com,APP456,Another comment'
                   ].join('\n');
                   downloadCsv(template, 'non-amex-certificate-template.csv');

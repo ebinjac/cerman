@@ -4,48 +4,68 @@ import { getTeamCertificates, getTeamById } from "@/src/app/actions"
 import { Suspense } from "react"
 import { CertificateTableSkeleton } from "@/src/components/ui/loading"
 import Link from "next/link"
+import { redirect } from "next/navigation"
+import { notFound } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Plus, Calendar, Upload } from "lucide-react"
+
+export const dynamic = 'force-dynamic'
 
 async function CertificatesContent({ teamId }: { teamId: string }) {
-  const [certificates, team] = await Promise.all([
-    getTeamCertificates(teamId),
-    getTeamById(teamId)
-  ])
+  const certificates = await getTeamCertificates(teamId)
+  const team = await getTeamById(teamId)
+
+  if (!team) {
+    notFound()
+  }
+
+  // Get application names from the team's applications
+  const applications = team.applications?.map(app => app.name) || []
 
   return (
-    <div className="space-y-8 p-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Certificate Management</h1>
+    <div className="container mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Certificates</h1>
+          <p className="text-muted-foreground">
+            Manage and monitor your team's certificates
+          </p>
+        </div>
         <div className="flex gap-4">
-          <CertificateOnboardingModal 
-            teamId={teamId}
-            teamApplications={team?.applications || []}
-          />
-          <Link
-            href={`/teams/${teamId}/certificates/bulk-upload`}
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-          >
-            Bulk Upload
+          <Link href={`/teams/${teamId}/certificates/planning`}>
+            <Button variant="outline">
+              <Calendar className="mr-2 h-4 w-4" />
+              Planning
+            </Button>
+          </Link>
+          <Link href={`/teams/${teamId}/certificates/bulk-upload`}>
+            <Button variant="outline">
+              <Upload className="mr-2 h-4 w-4" />
+              Bulk Upload
+            </Button>
+          </Link>
+          <Link href={`/teams/${teamId}/certificates/new`}>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Certificate
+            </Button>
           </Link>
         </div>
       </div>
+
       <CertificatesTable 
-        data={certificates}
+        data={certificates} 
         teamId={teamId}
+        teamApplications={applications}
       />
     </div>
   )
 }
 
-export default async function TeamCertificates({
-  params,
-}: {
-  params: Promise<{ teamId: string }>
-}) {
-  const { teamId } = await params;
-  
+export default async function CertificatesPage({ params }: { params: { teamId: string } }) {
   return (
     <Suspense fallback={<CertificateTableSkeleton />}>
-      <CertificatesContent teamId={teamId} />
+      <CertificatesContent teamId={params.teamId} />
     </Suspense>
   )
 }

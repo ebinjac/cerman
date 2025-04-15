@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { importCertificateFromCertaas } from "../app/actions"
 import { toast } from "sonner"
-import { Loader, CalendarIcon } from "lucide-react"
+import { Loader2, CalendarIcon } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -434,7 +434,7 @@ export function CertificateOnboardingForm({
           >
             {form.formState.isSubmitting ? (
               <span className="flex items-center gap-2">
-                <Loader className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Importing...
               </span>
             ) : (

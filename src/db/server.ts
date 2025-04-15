@@ -10,7 +10,6 @@ const pool = new Pool({
   // Disable SSL for local development
   ssl: false,
   // Disable pg-native
-  native: false,
 });
 
 // Create a single drizzle instance
